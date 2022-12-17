@@ -119,7 +119,7 @@ function solve(jets: string[], restingRocksLimit: number) {
 
     // Use cache to save memory and time in part two.
     // Remember the current jet, the current rock and the 8 highest rows of the
-    // chamber.
+    // chamber (arbitrary chosen as 2 times the height of the "tower" rock).
     let cacheKey = jetIndex + "|" + rockIndex + "|";
     for (let y = highestRockY; y >= highestRockY - rowsToCache && y >= 0; y--) {
       for (let x = 0; x < chamberWidth; x++) {
