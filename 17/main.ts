@@ -124,12 +124,12 @@ function solve(jets: string[], restingRocksLimit: number) {
     }
   }
 
-  return highestRockY + rocksFromCache + 1;
+  return rocksFromCache + highestRockY + 1;
 }
 
 let input = Deno.readTextFileSync("inputTest.txt");
-// input = Deno.readTextFileSync("input.txt");
+input = Deno.readTextFileSync("input.txt");
 const jets = input.split("");
 
-console.log("Part 1:", solve(jets, 2022));
-console.log("Part 2:", solve(jets, 1000000000000));
+console.log("Part One:", solve(jets, 2022));
+console.log("Part Two:", solve(jets, 1000000000000));
