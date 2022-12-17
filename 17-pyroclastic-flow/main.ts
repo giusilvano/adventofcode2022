@@ -1,4 +1,7 @@
-// https://adventofcode.com/2022/day/17
+/**
+ * Day 17: Pyroclastic Flow
+ * https://adventofcode.com/2022/day/17
+ */
 
 const chamberWidth = 7;
 const rowsToCache = 8;
