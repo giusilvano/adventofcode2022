@@ -116,7 +116,7 @@ function solve(jets: string[], restingRocksLimit: number) {
 
     // Use cache to save memory and time in part two.
     // Remember the current jet, the current rock and the 8 highest rows of the
-    // chamber
+    // chamber.
     let cacheKey = jetIndex + "|" + rockIndex + "|";
     for (let y = highestRockY; y >= highestRockY - rowsToCache && y >= 0; y--) {
       for (let x = 0; x < chamberWidth; x++) {
@@ -129,9 +129,10 @@ function solve(jets: string[], restingRocksLimit: number) {
     if (prevState) {
       // The current state is identical to another state in the past, meaning
       // that we are in a loop and all the rocks are going to land exactly as
-      // before. We can then count how many rocks rested and how much height
-      // they created, and repeat the loop until the end, but paying attention
-      // to not exceed restingRocksLimit.
+      // before to finally reach this state again, and so on. We can then count
+      // how many rocks rested and how much height they created since the last
+      // time, and repeat the loop until the end, but paying attention to not
+      // exceed restingRocksLimit.
       const restingRocksDiff = restingRocks - prevState.restingRocks;
       const highestRockYDiff = highestRockY - prevState.highestRockY;
       const loops = Math.floor(
