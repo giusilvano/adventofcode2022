@@ -1,5 +1,11 @@
 // https://adventofcode.com/2022/day/17
 
+const chamberWidth = 7;
+const rowsToCache = 8;
+
+/** Rock shapes are a list of [x,y] coords, where [0,0] is the left-bottom
+ * pixel of the rock. In both rocks and chamber representations y=0 is the
+ * bottom row */
 const rocks = [
   [
     // line
@@ -42,7 +48,6 @@ const rocks = [
 
 function solve(jets: string[], restingRocksLimit: number) {
   const chamber: boolean[][] = [[]];
-  const chamberWidth = 7;
   let jetIndex = 0;
   let rockIndex = 0;
   let rockX = 2;
@@ -57,6 +62,9 @@ function solve(jets: string[], restingRocksLimit: number) {
   >();
 
   while (restingRocks < restingRocksLimit) {
+    const jet = jets[jetIndex];
+    const rock = rocks[rockIndex];
+
     function collision() {
       for (const coords of rock) {
         let [x, y] = coords;
@@ -69,9 +77,8 @@ function solve(jets: string[], restingRocksLimit: number) {
       }
     }
 
-    const jet = jets[jetIndex];
-    const rock = rocks[rockIndex];
-
+    // Try to move the rock left/right according to the jet and if it causes a
+    // collision rollback
     if (jet === ">") {
       rockX++;
       if (collision()) rockX--;
@@ -80,9 +87,14 @@ function solve(jets: string[], restingRocksLimit: number) {
       if (collision()) rockX++;
     }
 
+    // As above, try to move the rock one row down, if it causes a collision it
+    // means we are touching the other rocks, so the new one descending must
+    // become resting
     rockY--;
     if (collision()) {
+      // Move the rock up again so it doesn't overlap the others
       rockY++;
+      // Save the rock in the chamber map to make it resting
       for (const coords of rock) {
         let [x, y] = coords;
         x += rockX;
@@ -91,8 +103,10 @@ function solve(jets: string[], restingRocksLimit: number) {
         chamber[x][y] = true;
         highestRockY = Math.max(highestRockY, y);
       }
+      // Rock is resting, increment counter
       restingRocks++;
 
+      // Setup the next rock to start descending
       rockIndex = (rockIndex + 1) % rocks.length;
       rockX = 2;
       rockY = highestRockY + 1 + 3;
@@ -100,10 +114,11 @@ function solve(jets: string[], restingRocksLimit: number) {
 
     jetIndex = (jetIndex + 1) % jets.length;
 
-    // Check cache
-
+    // Use cache to save memory and time in part two.
+    // Remember the current jet, the current rock and the 8 highest rows of the
+    // chamber
     let cacheKey = jetIndex + "|" + rockIndex + "|";
-    for (let y = highestRockY; y >= highestRockY - 8 && y >= 0; y--) {
+    for (let y = highestRockY; y >= highestRockY - rowsToCache && y >= 0; y--) {
       for (let x = 0; x < chamberWidth; x++) {
         cacheKey += chamber[x]?.[y] ? "#" : ".";
       }
@@ -112,12 +127,20 @@ function solve(jets: string[], restingRocksLimit: number) {
 
     const prevState = cache.get(cacheKey);
     if (prevState) {
+      // The current state is identical to another state in the past, meaning
+      // that we are in a loop and all the rocks are going to land exactly as
+      // before. We can then count how many rocks rested and how much height
+      // they created, and repeat the loop until the end, but paying attention
+      // to not exceed restingRocksLimit.
       const restingRocksDiff = restingRocks - prevState.restingRocks;
       const highestRockYDiff = highestRockY - prevState.highestRockY;
       const loops = Math.floor(
         (restingRocksLimit - restingRocks) / restingRocksDiff
       );
       restingRocks += restingRocksDiff * loops;
+      // We can't increment highestRockYDiff directly, its value would then be
+      // not aligned with the contents of the chamber var, breaking the
+      // algorithm. We store then the increment in a separate variable.
       rocksFromCache += highestRockYDiff * loops;
     } else {
       cache.set(cacheKey, { restingRocks, highestRockY });
@@ -128,7 +151,7 @@ function solve(jets: string[], restingRocksLimit: number) {
 }
 
 let input = Deno.readTextFileSync("inputTest.txt");
-input = Deno.readTextFileSync("input.txt");
+// input = Deno.readTextFileSync("input.txt");
 const jets = input.split("");
 
 console.log("Part One:", solve(jets, 2022));
