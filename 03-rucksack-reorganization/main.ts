@@ -1,13 +1,11 @@
+/**
+ * Day 3: Rucksack Reorganization
+ * https://adventofcode.com/2022/day/2
+ */
+
 const input = await Deno.readTextFile("input.txt");
 
 const data = input.split("\n");
-// .map((itemsString) => [
-//   itemsString.slice(0, itemsString.length / 2),
-//   itemsString.slice(itemsString.length / 2),
-// ]);
-
-console.log(priority("Z"));
-// console.log(data);
 
 function priority(letter: string) {
   if (letter === letter.toLowerCase()) {
@@ -21,10 +19,6 @@ let part1 = 0;
 let part2 = 0;
 
 let member = 0;
-
-function flipArray(arr: Array<any>) {
-  return Object.entries(arr).map(([key, value]) => [value, key]);
-}
 
 let cache: any = {};
 for (const row of data) {
