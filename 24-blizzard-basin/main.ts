@@ -128,7 +128,7 @@ function solve(
       }
 
       if (x < 0 || y < 0) continue;
-      if (x > width || y > height) continue;
+      if (x >= width || y >= height) continue;
 
       let avoidsBlizzards = true;
       for (const blizDirection in blizzardsMaps) {
@@ -150,7 +150,7 @@ function solve(
   }
 
   function print(time: number) {
-    let str = "";
+    let str = "#";
     for (let y = 0; y < height; y++) {
       for (let x = 0; x < width; x++) {
         const chars: string[] = [];
@@ -165,16 +165,12 @@ function solve(
         else if (chars.length === 1) str += chars[0];
         else str += chars.length;
       }
-      str += "\n";
+      str += "#\n#";
     }
-    // console.log(str);
+    console.log(str);
     return str;
   }
 
-  // console.log(print(13) === print(25));
-  // console.log(print(1) === print(601));
-  // console.log(width, height);
-  print(0);
   console.log(shortestMovesToEnd);
   return shortestTimeToEnd;
 }
@@ -189,11 +185,10 @@ const end = { x: data.width - 1, y: data.height };
 
 const startToEndTime = solve(data, start, end, 0);
 
-console.log("Part One:", startToEndTime);
+console.log("Part One:", startToEndTime); // 18, 288
 
-const backToStartTime = solve(data, end, start, startToEndTime); //works if adding +3
-console.log(backToStartTime);
+const backToStartTime = solve(data, end, start, startToEndTime);
 
 const backToEndTime = solve(data, start, end, backToStartTime);
 
-console.log("Part Two:", backToEndTime); // should be 861
+console.log("Part Two:", backToEndTime); // 54, 861
