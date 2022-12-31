@@ -3,144 +3,161 @@
  * https://adventofcode.com/2022/day/24
  */
 
-const RIGHT = ">",
-  DOWN = "v",
-  LEFT = "<",
-  UP = "^",
-  WAIT = "W";
-
-type Direction = typeof RIGHT | typeof DOWN | typeof LEFT | typeof UP;
-
-interface Position {
-  x: number;
-  y: number;
+enum Move {
+  Right = ">",
+  Down = "v",
+  Left = "<",
+  Up = "^",
+  Wait = ".",
 }
 
-const steps = {
-  [RIGHT]: { x: 1, y: 0 },
-  [DOWN]: { x: 0, y: 1 },
-  [LEFT]: { x: -1, y: 0 },
-  [UP]: { x: 0, y: -1 },
-  [WAIT]: { x: 0, y: 0 },
+type Blizzard = Exclude<Move, Move.Wait>;
+
+interface Coord {
+  row: number;
+  col: number;
+}
+
+const deltas = {
+  [Move.Right]: { col: 1, row: 0 },
+  [Move.Down]: { col: 0, row: 1 },
+  [Move.Left]: { col: -1, row: 0 },
+  [Move.Up]: { col: 0, row: -1 },
+  [Move.Wait]: { col: 0, row: 0 },
 };
 
-const charss: any = {
-  [RIGHT]: ">",
-  [LEFT]: "<",
-  [UP]: "^",
-  [DOWN]: "v",
-};
-
-interface ParsedInput {
+interface Input {
   width: number;
   height: number;
-  blizzardsMaps: { [key in Direction]: boolean[][] };
+  blizzardsMaps: { [key in Blizzard]: boolean[][] };
 }
 
-function parseInput(input: string): ParsedInput {
+function parseInput(input: string): Input {
   input = input.trim();
   const map = input
     .split("\n")
+    // Remove left and right walls from the input
     .map((row) => row.substring(1, row.length - 1).split(""));
+  // Remove first and last row to make processing easier
   map.shift();
   map.pop();
 
   const width = map[0].length;
   const height = map.length;
 
-  const blizzardsMaps: ParsedInput["blizzardsMaps"] = {
-    [DOWN]: [],
-    [RIGHT]: [],
-    [LEFT]: [],
-    [UP]: [],
+  // We save the blizzards in 4 separated maps, one for each direction
+  const blizzardsMaps: Input["blizzardsMaps"] = {
+    [Move.Down]: [],
+    [Move.Right]: [],
+    [Move.Left]: [],
+    [Move.Up]: [],
   };
-  for (let y = 0; y < height; y++) {
-    blizzardsMaps[DOWN][y] = [];
-    blizzardsMaps[RIGHT][y] = [];
-    blizzardsMaps[LEFT][y] = [];
-    blizzardsMaps[UP][y] = [];
-    for (let x = 0; x < width; x++) {
-      const char = map[y][x];
-      if (char !== ".") blizzardsMaps[char as Direction][y][x] = true;
+  for (let row = 0; row < height; row++) {
+    blizzardsMaps[Move.Down][row] = [];
+    blizzardsMaps[Move.Right][row] = [];
+    blizzardsMaps[Move.Left][row] = [];
+    blizzardsMaps[Move.Up][row] = [];
+    for (let col = 0; col < width; col++) {
+      const char = map[row][col];
+      if (char !== ".") blizzardsMaps[char as Blizzard][row][col] = true;
     }
   }
 
   return { width, height, blizzardsMaps };
 }
 
-function getStateKey(x: number, y: number, time: number) {
-  return `${x} ${y} ${time}`;
+function getStateKey(row: number, col: number, time: number) {
+  return `${col} ${row} ${time}`;
 }
 
-function solve(
-  input: ParsedInput,
-  start: Position,
-  end: Position,
-  time: number
-) {
+// Makes i behave as a circular index: if i=length returns 0, if i=-1 returns
+// length-1 and so on
+function wrapIndex(i: number, length: number) {
+  i %= length;
+  if (i < 0) i = length + i;
+  return i;
+}
+
+// Returns true if there's a blizzard at the coord and time provided.
+// Blizzards are checked using the 4 separate blizzards maps and just shifting
+// indexes at every time increase. Data in memory is not altered, resulting in
+// a much faster computation.
+function hasBlizzard(input: Input, row: number, col: number, time: number) {
   const { width, height, blizzardsMaps } = input;
-  let shortestTimeToEnd = Infinity;
-  let shortestMovesToEnd;
+  for (const blizzard in blizzardsMaps) {
+    let { row: blizRow, col: blizCol } = deltas[blizzard as Blizzard];
+    blizRow = wrapIndex(blizRow * -1 * time + row, height);
+    blizCol = wrapIndex(blizCol * -1 * time + col, width);
+    if (blizzardsMaps[blizzard as Blizzard][blizRow][blizCol]) return true;
+  }
+  return false;
+}
+
+// Prints a map with the blizzards at the time provided, in the same style of
+// the ones in the challenge prompt.
+function print(input: Input, time: number) {
+  const { width, height, blizzardsMaps } = input;
+  let str = "#." + "#".repeat(width) + "\n";
+  for (let row = 0; row < height; row++) {
+    str += "#";
+    for (let col = 0; col < width; col++) {
+      const chars: string[] = [];
+      for (const blizDirection in blizzardsMaps) {
+        let { row: blizRow, col: blizCol } = deltas[blizDirection as Move];
+        blizRow = wrapIndex(blizRow * -1 * time + row, height);
+        blizCol = wrapIndex(blizCol * -1 * time + col, width);
+        if (blizzardsMaps[blizDirection as Blizzard][blizRow][blizCol])
+          chars.push(blizDirection);
+      }
+      if (chars.length === 0) str += ".";
+      else if (chars.length === 1) str += chars[0];
+      else str += chars.length;
+    }
+    str += "#\n";
+  }
+  str += "#".repeat(width) + ".#";
+
+  console.log(str);
+  return str;
+}
+
+function getShortestPath(input: Input, start: Coord, end: Coord, time: number) {
+  const { width, height } = input;
+
+  // BFS over the possible moves
 
   const queue = [{ ...start, time, moves: "" }];
-  const visited = new Set<string>([getStateKey(start.x, start.y, time)]);
-
-  function wrapIndex(i: number, length: number) {
-    i %= length;
-    if (i < 0) i = length + i;
-    return i;
-  }
+  const visited = new Set<string>([getStateKey(start.row, start.col, time)]);
 
   while (queue.length) {
     const prevState = queue.shift()!;
 
-    if (
-      prevState.time +
-        Math.abs(end.x - prevState.x) +
-        Math.abs(end.y - prevState.y) >
-      shortestTimeToEnd
-    )
-      continue;
-
-    const time = prevState.time + 1;
-
-    for (const [direction, move] of Object.entries(steps)) {
-      const x = prevState.x + move.x;
-      const y = prevState.y + move.y;
+    for (const [direction, delta] of Object.entries(deltas)) {
+      const row = prevState.row + delta.row;
+      const col = prevState.col + delta.col;
+      const time = prevState.time + 1;
       const moves = prevState.moves + direction;
-      const state = { x, y, time, moves };
-      const stateKey = getStateKey(x, y, time);
+      const state = { row, col, time, moves };
+      const stateKey = getStateKey(row, col, time);
 
-      if (x === end.x && y === end.y) {
-        if (time < shortestTimeToEnd) {
-          shortestTimeToEnd = time;
-          shortestMovesToEnd = moves;
-        }
-        continue;
+      if (row === end.row && col === end.col) {
+        // Being in a BFS, as soon as we find a solution it is the shortest path
+        return { time, moves };
       }
 
-      if (x === start.x && y === start.y) {
-        if (!visited.has(stateKey)) {
-          queue.push(state);
-          visited.add(stateKey);
-        }
-        continue;
-      }
-
-      if (x < 0 || y < 0) continue;
-      if (x >= width || y >= height) continue;
-
-      let avoidsBlizzards = true;
-      for (const blizDirection in blizzardsMaps) {
-        let { x: blizX, y: blizY } = steps[blizDirection as Direction];
-        blizX = wrapIndex(blizX * -1 * time + x, width);
-        blizY = wrapIndex(blizY * -1 * time + y, height);
-        if (blizzardsMaps[blizDirection as Direction][blizY][blizX]) {
-          avoidsBlizzards = false;
-          break;
+      // If we are on the starting position we don't need to check blizzards or
+      // coordinates validity
+      if (!(row === start.row && col === start.col)) {
+        if (
+          row < 0 ||
+          col < 0 ||
+          row >= height ||
+          col >= width ||
+          hasBlizzard(input, row, col, time)
+        ) {
+          continue;
         }
       }
-      if (!avoidsBlizzards) continue;
 
       if (visited.has(stateKey)) continue;
 
@@ -149,46 +166,41 @@ function solve(
     }
   }
 
-  function print(time: number) {
-    let str = "#";
-    for (let y = 0; y < height; y++) {
-      for (let x = 0; x < width; x++) {
-        const chars: string[] = [];
-        for (const blizDirection in blizzardsMaps) {
-          let { x: blizX, y: blizY } = steps[blizDirection as Direction];
-          blizX = wrapIndex(blizX * -1 * time + x, width);
-          blizY = wrapIndex(blizY * -1 * time + y, height);
-          if (blizzardsMaps[blizDirection as Direction][blizY][blizX])
-            chars.push(charss[blizDirection]);
-        }
-        if (chars.length === 0) str += ".";
-        else if (chars.length === 1) str += chars[0];
-        else str += chars.length;
-      }
-      str += "#\n#";
-    }
-    console.log(str);
-    return str;
-  }
-
-  console.log(shortestMovesToEnd);
-  return shortestTimeToEnd;
+  throw new Error("No valid path found");
 }
 
-let input = Deno.readTextFileSync("inputTest.txt").trim();
-input = Deno.readTextFileSync("input.txt").trim();
+let inputString = Deno.readTextFileSync("inputTest.txt").trim();
+inputString = Deno.readTextFileSync("input.txt").trim();
 
-const data = parseInput(input);
+const input = parseInput(inputString);
 
-const start = { x: 0, y: -1 };
-const end = { x: data.width - 1, y: data.height };
+const start = { row: -1, col: 0 };
+const end = { row: input.height, col: input.width - 1 };
 
-const startToEndTime = solve(data, start, end, 0);
+const { time: startToEndTime, moves: startToEndMoves } = getShortestPath(
+  input,
+  start,
+  end,
+  0
+);
+
+const { time: backToStartTime, moves: backToStartMoves } = getShortestPath(
+  input,
+  end,
+  start,
+  startToEndTime
+);
+
+const { time: backToEndTime, moves: backToEndMoves } = getShortestPath(
+  input,
+  start,
+  end,
+  backToStartTime
+);
 
 console.log("Part One:", startToEndTime); // 18, 288
+console.log("Part Two:", backToEndTime, "\n"); // 54, 861
 
-const backToStartTime = solve(data, end, start, startToEndTime);
-
-const backToEndTime = solve(data, start, end, backToStartTime);
-
-console.log("Part Two:", backToEndTime); // 54, 861
+console.log("Start to end moves:", startToEndMoves, "\n");
+console.log("Back to start moves:", backToStartMoves, "\n");
+console.log("Back to end moves:", backToEndMoves, "\n");
