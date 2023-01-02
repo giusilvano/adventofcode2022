@@ -3,143 +3,159 @@
  * https://adventofcode.com/2022/day/23
  */
 
-interface Position {
-  x: number;
-  y: number;
+interface Elf {
+  row: number;
+  col: number;
 }
 
-function key(y: number, x: number) {
-  return `${y} ${x}`;
+type ElfsMap = Map<string, Elf>;
+
+function key(row: number, col: number) {
+  return `${row} ${col}`;
 }
 
 function parseInput(input: string) {
-  const elfs: { [k: string]: Position } = {};
   const map = input
     .split("\n")
     .map((row) => row.split("").map((char) => (char === "#" ? 1 : 0)));
-  for (let y = 0; y < map.length; y++) {
-    for (let x = 0; x < map[y].length; x++) {
-      if (map[y][x]) elfs[key(y, x)] = { x, y };
+
+  // For faster and easier access elfs are stored in a map where the key is a
+  // string representing its coordinates and the value is an object containing
+  // the raw numberic coords
+  const elfs = new Map<string, Elf>();
+
+  for (let row = 0; row < map.length; row++) {
+    for (let col = 0; col < map[row].length; col++) {
+      if (map[row][col]) elfs.set(key(row, col), { row, col });
     }
   }
-  return { elfs, map };
+  return elfs;
 }
 
-function solve(input: any, maxRounds?: number) {
-  let { elfs } = input;
-  elfs = structuredClone(elfs);
+function solve(elfs: ElfsMap, maxRounds?: number) {
+  elfs = new Map(elfs);
 
   const directions = ["N", "S", "W", "E"];
-  // const steps = [
-  //   { x: 0, y: -1 },
-  //   { x: 0, y: +1 },
-  //   { x: -1, y: 0 },
-  //   { x: 1, y: 0 },
-  // ];
+
   let rounds = 0;
   while (true) {
-    const proposals: any = {};
-    for (const elf of Object.values(elfs) as any) {
-      const { x, y } = elf;
+    const proposals = new Map<string, Elf & { proposerElfsKeys: string[] }>();
+    for (const elf of elfs.values()) {
+      const { row, col } = elf;
+      const elfKey = key(row, col);
+
+      // Store the state of surrounding cells in variables so they can be reused
+      // below without doing another lookup in the elfs map, resulting in a
+      // faster execution
+      const isNWfree = !elfs.has(key(row - 1, col - 1)),
+        isNfree = !elfs.has(key(row - 1, col)),
+        isNEfree = !elfs.has(key(row - 1, col + 1)),
+        isEfree = !elfs.has(key(row, col + 1)),
+        isSEfree = !elfs.has(key(row + 1, col + 1)),
+        isSfree = !elfs.has(key(row + 1, col)),
+        isSWfree = !elfs.has(key(row + 1, col - 1)),
+        isWfree = !elfs.has(key(row, col - 1));
+
       if (
-        !elfs[key(y - 1, x - 1)] &&
-        !elfs[key(y - 1, x)] &&
-        !elfs[key(y - 1, x + 1)] &&
-        !elfs[key(y, x + 1)] &&
-        !elfs[key(y + 1, x + 1)] &&
-        !elfs[key(y + 1, x)] &&
-        !elfs[key(y + 1, x - 1)] &&
-        !elfs[key(y, x - 1)]
+        isNWfree &&
+        isNfree &&
+        isNEfree &&
+        isEfree &&
+        isSEfree &&
+        isSfree &&
+        isSWfree &&
+        isWfree
       )
         continue;
+
+      function addProposal(row: number, col: number) {
+        const proposalKey = key(row, col);
+        const proposal = proposals.get(proposalKey) || {
+          row,
+          col,
+          proposerElfsKeys: [],
+        };
+        proposal.proposerElfsKeys.push(elfKey);
+        proposals.set(proposalKey, proposal);
+      }
+
       for (const direction of directions) {
-        if (
-          direction === "N" &&
-          !elfs[key(y - 1, x - 1)] &&
-          !elfs[key(y - 1, x)] &&
-          !elfs[key(y - 1, x + 1)]
-        ) {
-          const keyy = key(y - 1, x);
-          if (!proposals[keyy])
-            proposals[keyy] = { destination: { x, y: y - 1 }, elffs: [] };
-          proposals[keyy].elffs.push(elf);
+        if (direction === "N" && isNWfree && isNfree && isNEfree) {
+          addProposal(row - 1, col);
           break;
         }
-        if (
-          direction === "S" &&
-          !elfs[key(y + 1, x - 1)] &&
-          !elfs[key(y + 1, x)] &&
-          !elfs[key(y + 1, x + 1)]
-        ) {
-          const keyy = key(y + 1, x);
-          if (!proposals[keyy])
-            proposals[keyy] = { destination: { x, y: y + 1 }, elffs: [] };
-          proposals[keyy].elffs.push(elf);
+        if (direction === "S" && isSWfree && isSfree && isSEfree) {
+          addProposal(row + 1, col);
           break;
         }
-        if (
-          direction === "W" &&
-          !elfs[key(y - 1, x - 1)] &&
-          !elfs[key(y, x - 1)] &&
-          !elfs[key(y + 1, x - 1)]
-        ) {
-          const keyy = key(y, x - 1);
-          if (!proposals[keyy])
-            proposals[keyy] = { destination: { x: x - 1, y }, elffs: [] };
-          proposals[keyy].elffs.push(elf);
+        if (direction === "W" && isNWfree && isWfree && isSWfree) {
+          addProposal(row, col - 1);
           break;
         }
-        if (
-          direction === "E" &&
-          !elfs[key(y - 1, x + 1)] &&
-          !elfs[key(y, x + 1)] &&
-          !elfs[key(y + 1, x + 1)]
-        ) {
-          const keyy = key(y, x + 1);
-          if (!proposals[keyy])
-            proposals[keyy] = { destination: { x: x + 1, y }, elffs: [] };
-          proposals[keyy].elffs.push(elf);
+        if (direction === "E" && isNEfree && isEfree && isSEfree) {
+          addProposal(row, col + 1);
           break;
         }
       }
     }
+
     let movedElfs = 0;
-    for (const proposal of Object.values(proposals)) {
-      const { destination, elffs } = proposal as any;
-      if (elffs.length > 1) continue;
-      delete elfs[key(elffs[0].y, elffs[0].x)];
-      const { y, x } = destination;
-      elfs[key(y, x)] = { y, x };
+    for (const proposal of proposals.values()) {
+      const { row, col, proposerElfsKeys } = proposal;
+      if (proposerElfsKeys.length > 1) continue;
+      elfs.delete(proposerElfsKeys[0]);
+      elfs.set(key(row, col), { row, col });
       movedElfs++;
     }
 
+    // Update processing order of directions
     directions.push(directions.shift()!);
+
     rounds++;
+
+    // print(elfs);
 
     if (movedElfs === 0) break;
     if (rounds === maxRounds) break;
-
-    // draw(elfs);
   }
 
   return { elfs, rounds };
 }
 
-function draw(elfs: { [k: string]: Position }) {
-  let minX = Infinity,
-    minY = Infinity,
-    maxX = -Infinity,
-    maxY = -Infinity;
-  for (const elf of Object.values(elfs)) {
-    minX = Math.min(minX, elf.x);
-    minY = Math.min(minY, elf.y);
-    maxX = Math.max(maxX, elf.x);
-    maxY = Math.max(maxY, elf.y);
+function getElfsBoundingRect(elfs: ElfsMap) {
+  let startRow = Infinity,
+    startCol = Infinity,
+    endRow = -Infinity,
+    endCol = -Infinity;
+  for (const elf of elfs.values()) {
+    startCol = Math.min(startCol, elf.col);
+    startRow = Math.min(startRow, elf.row);
+    endCol = Math.max(endCol, elf.col);
+    endRow = Math.max(endRow, elf.row);
   }
+  return { startRow, startCol, endRow, endCol };
+}
+
+function countEmptyTiles(elfs: ElfsMap) {
+  const { startRow, startCol, endRow, endCol } = getElfsBoundingRect(elfs);
+
+  let count = 0;
+  for (let row = startRow; row <= endRow; row++) {
+    for (let col = startCol; col <= endCol; col++) {
+      if (!elfs.has(key(row, col))) count++;
+    }
+  }
+
+  return count;
+}
+
+function print(elfs: ElfsMap) {
+  const { startRow, startCol, endRow, endCol } = getElfsBoundingRect(elfs);
+
   let str = "";
-  for (let y = minY; y <= maxY; y++) {
-    for (let x = minX; x <= maxX; x++) {
-      str += elfs[key(y, x)] ? "#" : ".";
+  for (let row = startRow; row <= endRow; row++) {
+    for (let col = startCol; col <= endCol; col++) {
+      str += elfs.has(key(row, col)) ? "#" : ".";
     }
     str += "\n";
   }
@@ -147,36 +163,15 @@ function draw(elfs: { [k: string]: Position }) {
   console.log(str);
 }
 
-function countEmptyGround(elfs: { [k: string]: Position }) {
-  let minX = Infinity,
-    minY = Infinity,
-    maxX = -Infinity,
-    maxY = -Infinity;
-  for (const elf of Object.values(elfs)) {
-    minX = Math.min(minX, elf.x);
-    minY = Math.min(minY, elf.y);
-    maxX = Math.max(maxX, elf.x);
-    maxY = Math.max(maxY, elf.y);
-  }
-  let count = 0;
-  for (let y = minY; y <= maxY; y++) {
-    for (let x = minX; x <= maxX; x++) {
-      if (!elfs[key(y, x)]) count++;
-    }
-  }
-
-  return count;
-}
-
-let input = Deno.readTextFileSync("inputTest.txt");
-input = Deno.readTextFileSync("input.txt");
-
-const { elfs } = solve(parseInput(input), 10);
+let inputString = Deno.readTextFileSync("inputTest.txt");
+inputString = Deno.readTextFileSync("input.txt");
+const input = parseInput(inputString);
 
 // 3970 part1
 // 923  part2
-console.log("Part One:", countEmptyGround(elfs));
 
-const { rounds } = solve(parseInput(input));
+const { elfs } = solve(input, 10);
+console.log("Part One:", countEmptyTiles(elfs));
 
+const { rounds } = solve(input);
 console.log("Part Two:", rounds);
