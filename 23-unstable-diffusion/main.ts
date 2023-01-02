@@ -8,7 +8,7 @@ interface Elf {
   col: number;
 }
 
-type ElfsMap = Map<string, Elf>;
+type ElvesMap = Map<string, Elf>;
 
 function key(row: number, col: number) {
   return `${row} ${col}`;
@@ -19,42 +19,42 @@ function parseInput(input: string) {
     .split("\n")
     .map((row) => row.split("").map((char) => (char === "#" ? 1 : 0)));
 
-  // For faster and easier access elfs are stored in a map where the key is a
+  // For faster and easier access elves are stored in a map where the key is a
   // string representing its coordinates and the value is an object containing
   // the raw numberic coords
-  const elfs = new Map<string, Elf>();
+  const elves = new Map<string, Elf>();
 
   for (let row = 0; row < map.length; row++) {
     for (let col = 0; col < map[row].length; col++) {
-      if (map[row][col]) elfs.set(key(row, col), { row, col });
+      if (map[row][col]) elves.set(key(row, col), { row, col });
     }
   }
-  return elfs;
+  return elves;
 }
 
-function solve(elfs: ElfsMap, maxRounds?: number) {
-  elfs = new Map(elfs);
+function solve(elves: ElvesMap, maxRounds?: number) {
+  elves = new Map(elves);
 
   const directions = ["N", "S", "W", "E"];
 
   let rounds = 0;
   while (true) {
     const proposals = new Map<string, Elf & { proposerElfsKeys: string[] }>();
-    for (const elf of elfs.values()) {
+    for (const elf of elves.values()) {
       const { row, col } = elf;
       const elfKey = key(row, col);
 
       // Store the state of surrounding cells in variables so they can be reused
-      // below without doing another lookup in the elfs map, resulting in a
+      // below without doing another lookup in the elves map, resulting in a
       // faster execution
-      const isNWfree = !elfs.has(key(row - 1, col - 1)),
-        isNfree = !elfs.has(key(row - 1, col)),
-        isNEfree = !elfs.has(key(row - 1, col + 1)),
-        isEfree = !elfs.has(key(row, col + 1)),
-        isSEfree = !elfs.has(key(row + 1, col + 1)),
-        isSfree = !elfs.has(key(row + 1, col)),
-        isSWfree = !elfs.has(key(row + 1, col - 1)),
-        isWfree = !elfs.has(key(row, col - 1));
+      const isNWfree = !elves.has(key(row - 1, col - 1)),
+        isNfree = !elves.has(key(row - 1, col)),
+        isNEfree = !elves.has(key(row - 1, col + 1)),
+        isEfree = !elves.has(key(row, col + 1)),
+        isSEfree = !elves.has(key(row + 1, col + 1)),
+        isSfree = !elves.has(key(row + 1, col)),
+        isSWfree = !elves.has(key(row + 1, col - 1)),
+        isWfree = !elves.has(key(row, col - 1));
 
       if (
         isNWfree &&
@@ -103,8 +103,8 @@ function solve(elfs: ElfsMap, maxRounds?: number) {
     for (const proposal of proposals.values()) {
       const { row, col, proposerElfsKeys } = proposal;
       if (proposerElfsKeys.length > 1) continue;
-      elfs.delete(proposerElfsKeys[0]);
-      elfs.set(key(row, col), { row, col });
+      elves.delete(proposerElfsKeys[0]);
+      elves.set(key(row, col), { row, col });
       movedElfs++;
     }
 
@@ -113,21 +113,21 @@ function solve(elfs: ElfsMap, maxRounds?: number) {
 
     rounds++;
 
-    // print(elfs);
+    // print(elves);
 
     if (movedElfs === 0) break;
     if (rounds === maxRounds) break;
   }
 
-  return { elfs, rounds };
+  return { elves, rounds };
 }
 
-function getElfsBoundingRect(elfs: ElfsMap) {
+function getElfsBoundingRect(elves: ElvesMap) {
   let startRow = Infinity,
     startCol = Infinity,
     endRow = -Infinity,
     endCol = -Infinity;
-  for (const elf of elfs.values()) {
+  for (const elf of elves.values()) {
     startCol = Math.min(startCol, elf.col);
     startRow = Math.min(startRow, elf.row);
     endCol = Math.max(endCol, elf.col);
@@ -136,26 +136,26 @@ function getElfsBoundingRect(elfs: ElfsMap) {
   return { startRow, startCol, endRow, endCol };
 }
 
-function countEmptyTiles(elfs: ElfsMap) {
-  const { startRow, startCol, endRow, endCol } = getElfsBoundingRect(elfs);
+function countEmptyTiles(elves: ElvesMap) {
+  const { startRow, startCol, endRow, endCol } = getElfsBoundingRect(elves);
 
   let count = 0;
   for (let row = startRow; row <= endRow; row++) {
     for (let col = startCol; col <= endCol; col++) {
-      if (!elfs.has(key(row, col))) count++;
+      if (!elves.has(key(row, col))) count++;
     }
   }
 
   return count;
 }
 
-function print(elfs: ElfsMap) {
-  const { startRow, startCol, endRow, endCol } = getElfsBoundingRect(elfs);
+function print(elves: ElvesMap) {
+  const { startRow, startCol, endRow, endCol } = getElfsBoundingRect(elves);
 
   let str = "";
   for (let row = startRow; row <= endRow; row++) {
     for (let col = startCol; col <= endCol; col++) {
-      str += elfs.has(key(row, col)) ? "#" : ".";
+      str += elves.has(key(row, col)) ? "#" : ".";
     }
     str += "\n";
   }
@@ -170,8 +170,8 @@ const input = parseInput(inputString);
 // 3970 part1
 // 923  part2
 
-const { elfs } = solve(input, 10);
-console.log("Part One:", countEmptyTiles(elfs));
+const { elves } = solve(input, 10);
+console.log("Part One:", countEmptyTiles(elves));
 
 const { rounds } = solve(input);
 console.log("Part Two:", rounds);
