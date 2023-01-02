@@ -3,54 +3,72 @@
  * https://adventofcode.com/2022/day/25
  */
 
-function solve(snafuNumbers: string[]) {
-  const map: any = { "2": 2, "1": 1, "0": 0, "-": -1, "=": -2 };
-  const map2: any = { 2: "2", 1: "1", 0: "0", [-1]: "-", [-2]: "=" };
-  let decimalSum = 0;
-  for (const snafu of snafuNumbers) {
-    let decimalNumber = 0;
-    for (let i = 0; i < snafu.length; i++) {
-      const char = snafu[i];
-      decimalNumber += map[char] * Math.pow(5, snafu.length - 1 - i);
-    }
-    console.log(decimalNumber);
-    decimalSum += decimalNumber;
-  }
+const snafuDigitToNumber = { "2": 2, "1": 1, "0": 0, "-": -1, "=": -2 };
+const numberToSnafuDigit = Object.fromEntries(
+  Object.entries(snafuDigitToNumber).map(([k, v]) => [v, k])
+);
 
-  let quotient = decimalSum,
-    rest;
+function snafuToDecimal(snafuNumber: string) {
+  let decimalNumber = 0;
+  for (let i = 0; i < snafuNumber.length; i++) {
+    const char = snafuNumber[i];
+    if (!(char in snafuDigitToNumber)) throw new Error("Invalid digit");
+    decimalNumber +=
+      snafuDigitToNumber[char as keyof typeof snafuDigitToNumber] *
+      Math.pow(5, snafuNumber.length - 1 - i);
+  }
+  return decimalNumber;
+}
+
+function decimalToSnafu(decimalNumber: number) {
+  // Start with the normal algorithm to convert a number to a different base:
+  // divide the number by the base and the remainder will be the rightmost
+  // digit, then in the same way divide the quotient by the base and the
+  // remainder will be a new digit, and keep doing this until the quotient is 0.
+  // In Snafu, to represent digits higher than 2 we need to increase the next
+  // digit by 1 and turn the current digit to the complementary negative value.
+  // So for example to do a 3 we increase the next digit by 1 (meaning +5 in
+  // decimal) and turn the current one to -2.
+
+  let quotient = decimalNumber,
+    remainder;
+  // Store digits as they are produced by the algorithm, so the rightmost will
+  // be the first, and the leftmost will be the last
+  const digits: number[] = [];
   let i = 0;
-  const arr: number[] = [];
   while (quotient !== 0) {
-    rest = quotient % 5;
+    remainder = quotient % 5;
     quotient = Math.floor(quotient / 5);
-    arr[i] = (arr[i] || 0) + rest;
-    if (arr[i] === 3) {
-      arr[i] = -2;
-      arr[i + 1] = 1;
-    } else if (arr[i] === 4) {
-      arr[i] = -1;
-      arr[i + 1] = 1;
-    } else if (arr[i] === 5) {
-      arr[i] = 0;
-      arr[i + 1] = 1;
-    } else if (arr[i] === 6) {
-      arr[i] = 1;
-      arr[i + 1] = 1;
-    } else if (arr[i] === 7) {
-      arr[i] = 1;
-      arr[i + 1] = 2;
+    // A previous digit conversion may have already set to 1 this digit, ensure
+    // to carry over that value in the computation
+    digits[i] = remainder + (digits[i] || 0);
+    if (digits[i] > 2) {
+      digits[i + 1] = 1;
+      digits[i] = -5 + digits[i];
     }
     i++;
   }
 
-  let out = "";
-  for (let j = arr.length - 1; j >= 0; j--) out += map2[arr[j]];
-  return out;
+  let snafuNumber = "";
+  for (let j = digits.length - 1; j >= 0; j--) {
+    snafuNumber += numberToSnafuDigit[digits[j]];
+  }
+  return snafuNumber;
+}
+
+function solve(snafuNumbers: string[]) {
+  let decimalSum = 0;
+  for (const snafuNumber of snafuNumbers) {
+    decimalSum += snafuToDecimal(snafuNumber);
+  }
+
+  const snafuSum = decimalToSnafu(decimalSum);
+  return snafuSum;
 }
 
 let input = Deno.readTextFileSync("inputTest.txt");
 input = Deno.readTextFileSync("input.txt");
 
-console.log("Part One:", solve(input.trim().split("\n")));
-// console.log("Part Two:", solve(monkeys, true));
+const snafuNumbers = input.trim().split("\n");
+
+console.log("Part One:", solve(snafuNumbers));
