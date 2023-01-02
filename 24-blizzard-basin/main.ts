@@ -78,40 +78,45 @@ function wrapIndex(i: number, length: number) {
   return i;
 }
 
-// Returns true if there's a blizzard at the coord and time provided.
-// Blizzards are checked using the 4 separate blizzards maps and just shifting
-// indexes at every time increase. Data in memory is not altered, resulting in
-// a much faster computation.
-function hasBlizzard(input: Input, row: number, col: number, time: number) {
+// Checks if there are blizzards at the coord and time provided.
+// Using 4 separate blizzards maps, one for each direction, it's possible to
+// to just shift indexes for each time increase instead of altering the maps,
+// resulting in a much faster computation.
+function hasBlizzard(
+  input: Input,
+  row: number,
+  col: number,
+  time: number,
+  // The blizzards list is useful for the print function
+  returnBlizzardsList = false
+) {
   const { width, height, blizzardsMaps } = input;
+  const list = [];
   for (const blizzard in blizzardsMaps) {
     let { row: blizRow, col: blizCol } = deltas[blizzard as Blizzard];
     blizRow = wrapIndex(blizRow * -1 * time + row, height);
     blizCol = wrapIndex(blizCol * -1 * time + col, width);
-    if (blizzardsMaps[blizzard as Blizzard][blizRow][blizCol]) return true;
+    if (blizzardsMaps[blizzard as Blizzard][blizRow][blizCol]) {
+      if (returnBlizzardsList) list.push(blizzard);
+      else return true;
+    }
   }
-  return false;
+  if (returnBlizzardsList) return list;
+  else return false;
 }
 
 // Prints a map with the blizzards at the time provided, in the same style of
 // the ones in the challenge prompt.
 function print(input: Input, time: number) {
-  const { width, height, blizzardsMaps } = input;
+  const { width, height } = input;
   let str = "#." + "#".repeat(width) + "\n";
   for (let row = 0; row < height; row++) {
     str += "#";
     for (let col = 0; col < width; col++) {
-      const chars: string[] = [];
-      for (const blizDirection in blizzardsMaps) {
-        let { row: blizRow, col: blizCol } = deltas[blizDirection as Move];
-        blizRow = wrapIndex(blizRow * -1 * time + row, height);
-        blizCol = wrapIndex(blizCol * -1 * time + col, width);
-        if (blizzardsMaps[blizDirection as Blizzard][blizRow][blizCol])
-          chars.push(blizDirection);
-      }
-      if (chars.length === 0) str += ".";
-      else if (chars.length === 1) str += chars[0];
-      else str += chars.length;
+      const blizzards = hasBlizzard(input, row, col, time, true) as string[];
+      if (blizzards.length === 0) str += ".";
+      else if (blizzards.length === 1) str += blizzards[0];
+      else str += blizzards.length;
     }
     str += "#\n";
   }
@@ -166,7 +171,7 @@ function getShortestPath(input: Input, start: Coord, end: Coord, time: number) {
     }
   }
 
-  throw new Error("No valid path found");
+  throw new Error("Path from start to end coords doesn't exist");
 }
 
 let inputString = Deno.readTextFileSync("inputTest.txt").trim();
