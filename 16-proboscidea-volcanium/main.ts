@@ -1,8 +1,11 @@
-// https://adventofcode.com/2022/day/13
+/**
+ * Day 16: Proboscidea Volcanium
+ * https://adventofcode.com/2022/day/16
+ */
 
 // First part
 let input = await Deno.readTextFile("inputTest.txt");
-// input = await Deno.readTextFile("input.txt");
+input = await Deno.readTextFile("input.txt");
 
 let graph: any = {};
 const flows: any = {};
@@ -26,7 +29,6 @@ input.split("\n").forEach((row) => {
     matches[3].split(", ").map((valve) => [valve, 1])
   );
 });
-console.log(graph);
 
 function floydWarshall(graph: any) {
   graph = structuredClone(graph);
@@ -49,7 +51,6 @@ function floydWarshall(graph: any) {
 }
 
 graph = floydWarshall(graph);
-// console.log(graph);
 
 function walk(
   valve: string,

@@ -1,4 +1,7 @@
-// https://adventofcode.com/2022/day/13
+/**
+ * Day 13: Distress Signal
+ * https://adventofcode.com/2022/day/13
+ */
 
 // First part
 let input = await Deno.readTextFile("inputTest.txt");

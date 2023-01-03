@@ -1,3 +1,8 @@
+/**
+ * Day 6: Tuning Trouble
+ * https://adventofcode.com/2022/day/6
+ */
+
 let input = await Deno.readTextFile("inputTest.txt");
 input = await Deno.readTextFile("input.txt");
 

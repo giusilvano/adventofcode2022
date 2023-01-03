@@ -1,4 +1,7 @@
-// https://adventofcode.com/2022/day/12
+/**
+ * Day 12: Hill Climbing Algorithm
+ * https://adventofcode.com/2022/day/12
+ */
 
 let input = await Deno.readTextFile("inputTest.txt");
 input = await Deno.readTextFile("input.txt");

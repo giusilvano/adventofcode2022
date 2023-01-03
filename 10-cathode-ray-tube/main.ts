@@ -1,4 +1,7 @@
-// https://adventofcode.com/2022/day/10
+/**
+ * Day 10: Cathode-Ray Tube
+ * https://adventofcode.com/2022/day/10
+ */
 
 let input = await Deno.readTextFile("inputTest.txt");
 input = await Deno.readTextFile("input.txt");

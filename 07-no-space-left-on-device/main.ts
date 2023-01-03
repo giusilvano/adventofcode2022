@@ -1,3 +1,8 @@
+/**
+ * Day 7: No Space Left On Device
+ * https://adventofcode.com/2022/day/7
+ */
+
 let input = await Deno.readTextFile("inputTest.txt");
 input = await Deno.readTextFile("input.txt");
 

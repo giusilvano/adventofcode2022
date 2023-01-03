@@ -45,8 +45,6 @@ const blueprints = input.split("\n").map((row) => {
   return blueprint;
 });
 
-const timeLimit = 32;
-
 const startState = {
   time: 1,
   ore: 0,
@@ -63,6 +61,7 @@ let bestScore = 0;
 let bestPath = "";
 function solve(
   b: typeof blueprints[0],
+  timeLimit: number,
   curState = startState,
   minScore = 0,
   ops = ""
@@ -121,7 +120,7 @@ function solve(
     nextState.ore -= b.geodeRobot.ore;
     nextState.obsidian -= b.geodeRobot.obsidian;
     nextState.rGeode++;
-    return solve(b, nextState, minScore, ops + "Ge|");
+    return solve(b, timeLimit, nextState, minScore, ops + "Ge|");
   } else {
     let maxScore = minScore;
     if (
@@ -134,7 +133,10 @@ function solve(
       t.ore -= b.obsidianRobot.ore;
       t.clay -= b.obsidianRobot.clay;
       t.rObsidian++;
-      maxScore = Math.max(maxScore, solve(b, t, maxScore, ops + "Ob|"));
+      maxScore = Math.max(
+        maxScore,
+        solve(b, timeLimit, t, maxScore, ops + "Ob|")
+      );
       // outcomes.push(solve(b, t));
     }
     if (
@@ -145,7 +147,10 @@ function solve(
       const t = { ...nextState };
       t.ore -= b.clayRobot.ore;
       t.rClay++;
-      maxScore = Math.max(maxScore, solve(b, t, maxScore, ops + "Cl|"));
+      maxScore = Math.max(
+        maxScore,
+        solve(b, timeLimit, t, maxScore, ops + "Cl|")
+      );
       // outcomes.push(solve(b, t, ops + "Cl|"));
     }
     if (
@@ -156,43 +161,45 @@ function solve(
       const t = { ...nextState };
       t.ore -= b.oreRobot.ore;
       t.rOre++;
-      maxScore = Math.max(maxScore, solve(b, t, maxScore, ops + "Or|"));
+      maxScore = Math.max(
+        maxScore,
+        solve(b, timeLimit, t, maxScore, ops + "Or|")
+      );
       // outcomes.push(solve(b, t, ops + "Or|"));
     }
-    maxScore = Math.max(maxScore, solve(b, nextState, maxScore, ops + "--|"));
+    maxScore = Math.max(
+      maxScore,
+      solve(b, timeLimit, nextState, maxScore, ops + "--|")
+    );
     return maxScore;
     // outcomes.push(solve(b, n, ops + "--|"));
     // return Math.max(...outcomes);
   }
 }
 
-function hey() {
+function part1() {
   let qualityLevelsSum = 0;
   for (let i = 0; i < blueprints.length; i++) {
     bestScore = 0;
     bestPath = "";
-    const score = solve(blueprints[i]);
-    // console.log("Blueprint", i + 1, score);
+    const score = solve(blueprints[i], 24);
     console.log(i + 1, score, bestPath);
     qualityLevelsSum += (i + 1) * score;
-    // break;
   }
   return qualityLevelsSum;
 }
 
-function hey2() {
+function part2() {
   let product = 1;
   for (let i = 0; i < 3; i++) {
     bestScore = 0;
     bestPath = "";
-    const score = solve(blueprints[i]);
-    // console.log("Blueprint", i + 1, score);
+    const score = solve(blueprints[i], 32);
     console.log(i + 1, score, bestPath);
     product *= score;
-    // break;
   }
   return product;
 }
 
-console.log("Part One:", hey());
-console.log("Part Two:", hey2());
+console.log("Part One:", part1());
+console.log("Part Two:", part2());

@@ -1,4 +1,7 @@
-// https://adventofcode.com/2022/day/13
+/**
+ * Day 14: Regolith Reservoir
+ * https://adventofcode.com/2022/day/14
+ */
 
 // First part
 let input = await Deno.readTextFile("inputTest.txt");

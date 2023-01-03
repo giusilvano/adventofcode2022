@@ -1,4 +1,7 @@
-// https://adventofcode.com/2022/day/9
+/**
+ * Day 9: Rope Bridge
+ * https://adventofcode.com/2022/day/9
+ */
 
 let input = await Deno.readTextFile("inputTest.txt");
 input = await Deno.readTextFile("input.txt");
