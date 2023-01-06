@@ -6,25 +6,25 @@
 type Map = string[][];
 type Instruction = number | "R" | "L";
 
-const RIGHT = 0,
+enum Face {
+  RIGHT = 0,
   DOWN = 1,
   LEFT = 2,
-  UP = 3;
-
-type Face = typeof RIGHT | typeof DOWN | typeof LEFT | typeof UP;
+  UP = 3,
+}
 
 const faceChar = {
-  [RIGHT]: ">",
-  [DOWN]: "v",
-  [LEFT]: "<",
-  [UP]: "^",
+  [Face.RIGHT]: ">",
+  [Face.DOWN]: "v",
+  [Face.LEFT]: "<",
+  [Face.UP]: "^",
 };
 
 const delta = {
-  [RIGHT]: { x: 1, y: 0 },
-  [DOWN]: { x: 0, y: 1 },
-  [LEFT]: { x: -1, y: 0 },
-  [UP]: { x: 0, y: -1 },
+  [Face.RIGHT]: { x: 1, y: 0 },
+  [Face.DOWN]: { x: 0, y: 1 },
+  [Face.LEFT]: { x: -1, y: 0 },
+  [Face.UP]: { x: 0, y: -1 },
 };
 
 function parseInput(input: string) {
@@ -53,16 +53,17 @@ function printMap(map: Map) {
 }
 
 function getCubeSize(map: Map) {
-  let nonEmptyCoords = 0;
+  // Every map must contain all the 6 facets of the cube.
+  // If we divide by 6 the number of non-empty tiles we obtain the area of one
+  // facet, then we can get the side using the square root.
+
+  let nonEmptyTiles = 0;
   for (const row of map) {
     for (const tile of row) {
-      if (tile !== undefined && tile !== " ") nonEmptyCoords++;
+      if (tile !== " " && tile !== undefined) nonEmptyTiles++;
     }
   }
-  // Every map must contain all the 6 faces of the cube.
-  // If we divide by 6 the number of non-empty cells we obtain the area of one
-  // face, then we can get the side using the square root.
-  return Math.sqrt(nonEmptyCoords / 6);
+  return Math.sqrt(nonEmptyTiles / 6);
 }
 
 function decodeEdge(string: string) {
@@ -73,31 +74,40 @@ function encodeEdge(facetY: number, facetX: number, face: number) {
   return [facetY, facetX, face].join(" ");
 }
 
-function getEdgesAdjacencies(cubeSize: number) {
-  const baseAdjacencies =
+function getEdgesConnections(cubeSize: number) {
+  // Edges connections are now hardcoded for my specific inputs.
+  // TODO: find edges programmatically for any input
+
+  // The facets coords are relative to the input map, not to the real cube.
+  // Input map is divided by "squares" using the size of the cube, so the facet
+  // at "0 2" is the the 3rd square of the 1st row (0 based indexes).
+  // So for example `0 2 RIGHT`: `2 3 LEFT` means that when we exit the facet
+  // at row=0,col=2 facing RIGHT we end up in the facet row=2,col=3 facing LEFT.
+
+  const baseConnections =
     cubeSize === 4
       ? {
-          [`0 2 ${RIGHT}`]: `2 3 ${LEFT}`,
-          [`0 2 ${LEFT}`]: `1 1 ${DOWN}`,
-          [`0 2 ${UP}`]: `1 0 ${DOWN}`,
-          [`1 0 ${DOWN}`]: `2 2 ${UP}`,
-          [`1 0 ${LEFT}`]: `2 3 ${UP}`,
-          [`1 1 ${DOWN}`]: `2 2 ${RIGHT}`,
-          [`1 2 ${RIGHT}`]: `2 3 ${DOWN}`,
+          [`0 2 ${Face.RIGHT}`]: `2 3 ${Face.LEFT}`,
+          [`0 2 ${Face.LEFT}`]: `1 1 ${Face.DOWN}`,
+          [`0 2 ${Face.UP}`]: `1 0 ${Face.DOWN}`,
+          [`1 0 ${Face.DOWN}`]: `2 2 ${Face.UP}`,
+          [`1 0 ${Face.LEFT}`]: `2 3 ${Face.UP}`,
+          [`1 1 ${Face.DOWN}`]: `2 2 ${Face.RIGHT}`,
+          [`1 2 ${Face.RIGHT}`]: `2 3 ${Face.DOWN}`,
         }
       : {
-          [`0 1 ${LEFT}`]: `2 0 ${RIGHT}`,
-          [`0 1 ${UP}`]: `3 0 ${RIGHT}`,
-          [`0 2 ${RIGHT}`]: `2 1 ${LEFT}`,
-          [`0 2 ${DOWN}`]: `1 1 ${LEFT}`,
-          [`0 2 ${UP}`]: `3 0 ${UP}`,
-          [`1 1 ${LEFT}`]: `2 0 ${DOWN}`,
-          [`3 0 ${RIGHT}`]: `2 1 ${UP}`,
+          [`0 1 ${Face.LEFT}`]: `2 0 ${Face.RIGHT}`,
+          [`0 1 ${Face.UP}`]: `3 0 ${Face.RIGHT}`,
+          [`0 2 ${Face.RIGHT}`]: `2 1 ${Face.LEFT}`,
+          [`0 2 ${Face.DOWN}`]: `1 1 ${Face.LEFT}`,
+          [`0 2 ${Face.UP}`]: `3 0 ${Face.UP}`,
+          [`1 1 ${Face.LEFT}`]: `2 0 ${Face.DOWN}`,
+          [`3 0 ${Face.RIGHT}`]: `2 1 ${Face.UP}`,
         };
 
   // Generate mirror connections
-  const connections = { ...baseAdjacencies };
-  for (const [edge1, edge2] of Object.entries(baseAdjacencies)) {
+  const connections = { ...baseConnections };
+  for (const [edge1, edge2] of Object.entries(baseConnections)) {
     const [y1, x1, face1] = decodeEdge(edge1);
     const [y2, x2, face2] = decodeEdge(edge2);
     connections[encodeEdge(y2, x2, (face2 + 2) % 4)] = encodeEdge(
@@ -115,21 +125,26 @@ function wrapCoordCube(
   x: number,
   face: Face,
   cubeSize: number,
-  connections: { [k: string]: string }
+  edgesConnections: { [k: string]: string }
 ) {
   const facetY = Math.floor(y / cubeSize),
     facetX = Math.floor(x / cubeSize);
-  const key = encodeEdge(facetY, facetX, face);
-  if (!Object.hasOwn(connections, key)) throw new Error();
-  const edgeString = connections[key];
-  const [newFacetY, newFacetX, newFace] = decodeEdge(edgeString);
 
+  const sourceEdgeString = encodeEdge(facetY, facetX, face);
+  const targetEdgeString = edgesConnections[sourceEdgeString];
+
+  const [newFacetY, newFacetX, newFace] = decodeEdge(targetEdgeString);
+
+  // Increment the coords normally as we were in 2d space
   y += delta[face].y;
   x += delta[face].x;
-  if (y < 0) y = cubeSize + y;
-  if (x < 0) x = cubeSize + x;
+  // Convert the coords to be relative to just a facet, not the entire map
   y %= cubeSize;
   x %= cubeSize;
+  if (y < 0) y = cubeSize + y;
+  if (x < 0) x = cubeSize + x;
+
+  // Rotate coords clockwise until the face matches the new one
   while (face !== newFace) {
     const tmpY = y;
     y = x;
@@ -138,8 +153,10 @@ function wrapCoordCube(
     face %= 4;
   }
 
+  // Transfer the rotated coords to the right facet on the map
   y += newFacetY * cubeSize;
   x += newFacetX * cubeSize;
+
   return { y, x, face };
 }
 
@@ -147,17 +164,17 @@ function wrapCoord(y: number, x: number, face: Face, map: Map) {
   const isTileEmpty = () => map[y]?.[x] !== " " && map[y]?.[x] !== undefined;
 
   switch (face) {
-    case RIGHT:
+    case Face.RIGHT:
       for (x = 0; x < map[y].length; x++) if (isTileEmpty()) return { y, x };
       break;
-    case DOWN:
+    case Face.DOWN:
       for (y = 0; y < map.length; y++) if (isTileEmpty()) return { y, x };
       break;
-    case LEFT:
+    case Face.LEFT:
       for (x = map[y].length - 1; x >= 0; x--)
         if (isTileEmpty()) return { y, x };
       break;
-    case UP:
+    case Face.UP:
       for (y = map.length - 1; y >= 0; y--) if (isTileEmpty()) return { y, x };
       break;
   }
@@ -168,16 +185,16 @@ function wrapCoord(y: number, x: number, face: Face, map: Map) {
 function walk(map: string[][], instructions: Instruction[], wrapCube = false) {
   let y = 0,
     x = map[0].indexOf("."),
-    face = 0 as Face;
+    face = Face.RIGHT;
 
   const mapWithPath = structuredClone(map);
   // Mark starting position
   mapWithPath[y][x] = faceChar[face];
 
-  let cubeSize, connections;
+  let cubeSize, edgesConnections;
   if (wrapCube) {
     cubeSize = getCubeSize(map);
-    connections = getEdgesAdjacencies(cubeSize);
+    edgesConnections = getEdgesConnections(cubeSize);
   }
 
   for (const movement of instructions) {
@@ -185,10 +202,10 @@ function walk(map: string[][], instructions: Instruction[], wrapCube = false) {
       if (movement === "R") face++;
       else if (movement === "L") face--;
 
-      if (face === 4) face = 0;
-      if (face === -1) face = 3;
+      if ((face as number) === 4) face = 0;
+      if ((face as number) === -1) face = 3;
 
-      mapWithPath[y][x] = faceChar[face as Face];
+      mapWithPath[y][x] = faceChar[face];
       continue;
     }
 
@@ -209,7 +226,7 @@ function walk(map: string[][], instructions: Instruction[], wrapCube = false) {
             prevX,
             prevFace,
             cubeSize as number,
-            connections as { [x: string]: string }
+            edgesConnections as { [x: string]: string }
           ));
         } else {
           ({ y, x } = wrapCoord(prevY, prevX, prevFace, map));
