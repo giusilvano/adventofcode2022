@@ -5,6 +5,7 @@
 
 type Map = string[][];
 type Instruction = number | "R" | "L";
+type EdgesConnections = { [k: string]: string };
 
 enum Face {
   RIGHT = 0,
@@ -74,7 +75,7 @@ function encodeEdge(facetY: number, facetX: number, face: number) {
   return [facetY, facetX, face].join(" ");
 }
 
-function getEdgesConnections(cubeSize: number) {
+function getEdgesConnections(cubeSize: number): EdgesConnections {
   // Edges connections are now hardcoded for my specific inputs.
   // TODO: find edges programmatically for any input
 
@@ -125,7 +126,7 @@ function wrapCoordCube(
   x: number,
   face: Face,
   cubeSize: number,
-  edgesConnections: { [k: string]: string }
+  edgesConnections: EdgesConnections
 ) {
   const facetY = Math.floor(y / cubeSize),
     facetX = Math.floor(x / cubeSize);
@@ -191,7 +192,7 @@ function walk(map: string[][], instructions: Instruction[], wrapCube = false) {
   // Mark starting position
   mapWithPath[y][x] = faceChar[face];
 
-  let cubeSize, edgesConnections;
+  let cubeSize: number, edgesConnections: EdgesConnections;
   if (wrapCube) {
     cubeSize = getCubeSize(map);
     edgesConnections = getEdgesConnections(cubeSize);
@@ -225,8 +226,8 @@ function walk(map: string[][], instructions: Instruction[], wrapCube = false) {
             prevY,
             prevX,
             prevFace,
-            cubeSize as number,
-            edgesConnections as { [x: string]: string }
+            cubeSize!,
+            edgesConnections!
           ));
         } else {
           ({ y, x } = wrapCoord(prevY, prevX, prevFace, map));
