@@ -163,15 +163,35 @@ function print(elves: ElvesMap) {
   console.log(str);
 }
 
-let inputString = Deno.readTextFileSync("inputTest.txt");
-inputString = Deno.readTextFileSync("input.txt");
-const input = parseInput(inputString);
+function run(
+  title: string,
+  input: string,
+  expectedPart1: number,
+  expectedPart2: number
+) {
+  console.log(`\n~~~ ${title} ~~~\n`);
 
-// 3970 part1
-// 923  part2
+  const parsedInput = parseInput(input);
 
-const { elves } = solve(input, 10);
-console.log("Part One:", countEmptyTiles(elves));
+  let { elves } = solve(parsedInput, 10);
+  const part1 = countEmptyTiles(elves);
+  console.log("Part One:", part1);
+  if (part1 !== expectedPart1) console.error("ERROR: expected", expectedPart1);
+  if (title.startsWith("Sample")) {
+    console.log();
+    print(elves);
+  }
 
-const { rounds } = solve(input);
-console.log("Part Two:", rounds);
+  let rounds;
+  ({ elves, rounds } = solve(parsedInput));
+  console.log("Part Two:", rounds);
+  if (rounds !== expectedPart2) console.log("ERROR: expected", expectedPart2);
+  if (title.startsWith("Sample")) {
+    console.log();
+    print(elves);
+  }
+}
+
+run("Sample input", Deno.readTextFileSync("input-sample.txt"), 110, 20);
+run("Real input", Deno.readTextFileSync("input.txt"), 3970, 923);
+console.log();
