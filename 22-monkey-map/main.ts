@@ -8,24 +8,24 @@ type Instruction = number | "R" | "L";
 type EdgesConnections = { [k: string]: string };
 
 enum Face {
-  RIGHT = 0,
-  DOWN = 1,
-  LEFT = 2,
-  UP = 3,
+  Right = 0,
+  Down = 1,
+  Left = 2,
+  Up = 3,
 }
 
 const faceChar = {
-  [Face.RIGHT]: ">",
-  [Face.DOWN]: "v",
-  [Face.LEFT]: "<",
-  [Face.UP]: "^",
+  [Face.Right]: ">",
+  [Face.Down]: "v",
+  [Face.Left]: "<",
+  [Face.Up]: "^",
 };
 
 const delta = {
-  [Face.RIGHT]: { x: 1, y: 0 },
-  [Face.DOWN]: { x: 0, y: 1 },
-  [Face.LEFT]: { x: -1, y: 0 },
-  [Face.UP]: { x: 0, y: -1 },
+  [Face.Right]: { x: 1, y: 0 },
+  [Face.Down]: { x: 0, y: 1 },
+  [Face.Left]: { x: -1, y: 0 },
+  [Face.Up]: { x: 0, y: -1 },
 };
 
 function parseInput(input: string) {
@@ -88,22 +88,22 @@ function getEdgesConnections(cubeSize: number): EdgesConnections {
   const baseConnections =
     cubeSize === 4
       ? {
-          [`0 2 ${Face.RIGHT}`]: `2 3 ${Face.LEFT}`,
-          [`0 2 ${Face.LEFT}`]: `1 1 ${Face.DOWN}`,
-          [`0 2 ${Face.UP}`]: `1 0 ${Face.DOWN}`,
-          [`1 0 ${Face.DOWN}`]: `2 2 ${Face.UP}`,
-          [`1 0 ${Face.LEFT}`]: `2 3 ${Face.UP}`,
-          [`1 1 ${Face.DOWN}`]: `2 2 ${Face.RIGHT}`,
-          [`1 2 ${Face.RIGHT}`]: `2 3 ${Face.DOWN}`,
+          [`0 2 ${Face.Right}`]: `2 3 ${Face.Left}`,
+          [`0 2 ${Face.Left}`]: `1 1 ${Face.Down}`,
+          [`0 2 ${Face.Up}`]: `1 0 ${Face.Down}`,
+          [`1 0 ${Face.Down}`]: `2 2 ${Face.Up}`,
+          [`1 0 ${Face.Left}`]: `2 3 ${Face.Up}`,
+          [`1 1 ${Face.Down}`]: `2 2 ${Face.Right}`,
+          [`1 2 ${Face.Right}`]: `2 3 ${Face.Down}`,
         }
       : {
-          [`0 1 ${Face.LEFT}`]: `2 0 ${Face.RIGHT}`,
-          [`0 1 ${Face.UP}`]: `3 0 ${Face.RIGHT}`,
-          [`0 2 ${Face.RIGHT}`]: `2 1 ${Face.LEFT}`,
-          [`0 2 ${Face.DOWN}`]: `1 1 ${Face.LEFT}`,
-          [`0 2 ${Face.UP}`]: `3 0 ${Face.UP}`,
-          [`1 1 ${Face.LEFT}`]: `2 0 ${Face.DOWN}`,
-          [`3 0 ${Face.RIGHT}`]: `2 1 ${Face.UP}`,
+          [`0 1 ${Face.Left}`]: `2 0 ${Face.Right}`,
+          [`0 1 ${Face.Up}`]: `3 0 ${Face.Right}`,
+          [`0 2 ${Face.Right}`]: `2 1 ${Face.Left}`,
+          [`0 2 ${Face.Down}`]: `1 1 ${Face.Left}`,
+          [`0 2 ${Face.Up}`]: `3 0 ${Face.Up}`,
+          [`1 1 ${Face.Left}`]: `2 0 ${Face.Down}`,
+          [`3 0 ${Face.Right}`]: `2 1 ${Face.Up}`,
         };
 
   // Generate mirror connections
@@ -165,17 +165,17 @@ function wrapCoord(y: number, x: number, face: Face, map: Map) {
   const isTileEmpty = () => map[y]?.[x] !== " " && map[y]?.[x] !== undefined;
 
   switch (face) {
-    case Face.RIGHT:
+    case Face.Right:
       for (x = 0; x < map[y].length; x++) if (isTileEmpty()) return { y, x };
       break;
-    case Face.DOWN:
+    case Face.Down:
       for (y = 0; y < map.length; y++) if (isTileEmpty()) return { y, x };
       break;
-    case Face.LEFT:
+    case Face.Left:
       for (x = map[y].length - 1; x >= 0; x--)
         if (isTileEmpty()) return { y, x };
       break;
-    case Face.UP:
+    case Face.Up:
       for (y = map.length - 1; y >= 0; y--) if (isTileEmpty()) return { y, x };
       break;
   }
@@ -186,7 +186,7 @@ function wrapCoord(y: number, x: number, face: Face, map: Map) {
 function walk(map: string[][], instructions: Instruction[], wrapCube = false) {
   let y = 0,
     x = map[0].indexOf("."),
-    face = Face.RIGHT;
+    face = Face.Right;
 
   const mapWithPath = structuredClone(map);
   // Mark starting position
